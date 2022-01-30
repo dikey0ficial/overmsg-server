@@ -42,8 +42,8 @@ func (AuthResult) Result() {}
 // Message is message.
 type Message struct {
 	From    string `json:"from_name"`
-	Error   string `json:"error,omitempty"`
 	Message string `json:"message"`
+	Error   string `json:"error,omitempty"`
 }
 
 // ToJSON returns encoded message
