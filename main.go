@@ -340,6 +340,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/auth", AuthHandler)
 	router.HandleFunc("/go_offline", GoOfflineHandler)
+	router.HandleFunc("/send_message", SendMessageHandler)
 	router.HandleFunc("/", root)
 	infl.Println("[START] ========================")
 	var mainDeathChan = make(chan struct{})
