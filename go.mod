@@ -1,4 +1,4 @@
-module overmsg-server
+module github.com/dikey0ficial/overmsg-server
 
 go 1.17
 
