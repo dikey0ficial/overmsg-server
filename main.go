@@ -299,9 +299,12 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.Write(Message{from.Name, req.Message, ""}.ToJSON())
+	w.WriteHeader(200)
+	w.Write(Answer{true, "", nil}.ToJSON())
 }
 
-func goOfflineHandler(w http.ResponseWriter, r *http.Request) {
+// GoOfflineHandler _
+func GoOfflineHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "POST" {
 		w.WriteHeader(405)
@@ -336,7 +339,7 @@ func main() {
 	defer infl.Println("[END]   ========================")
 	router := mux.NewRouter()
 	router.HandleFunc("/auth", AuthHandler)
-	router.HandleFunc("/go_offline", goOfflineHandler)
+	router.HandleFunc("/go_offline", GoOfflineHandler)
 	router.HandleFunc("/", root)
 	infl.Println("[START] ========================")
 	var mainDeathChan = make(chan struct{})
