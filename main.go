@@ -299,7 +299,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "User is offline", nil}.ToJSON())
 		return
 	}
-	fmt.Fprint(c, Message{from.Name, req.Message})
+	c.Write(Message{from.Name, req.Message}.ToJSON())
 }
 
 func goOfflineHandler(w http.ResponseWriter, r *http.Request) {

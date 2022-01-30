@@ -42,16 +42,17 @@ func (AuthResult) Result() {}
 // Message is message.
 type Message struct {
 	From    string `json:"from_name"`
+	Error   string `json:"error,omitempty"`
 	Message string `json:"message"`
 }
 
-// ToJSON returns encoded answer
+// ToJSON returns encoded message
 // as bytes
 func (m Message) ToJSON() []byte {
 	res, err := json.Marshal(m)
 	if err != nil {
-		infl.Println("[ERROR] answer2json: ", err)
-		return []byte(`{"from":"", "message":"Error of encoding"}`)
+		infl.Println("[ERROR] message2json: ", err)
+		return []byte(`{"error":"Error of encoding"}`)
 	}
 	return res
 }
