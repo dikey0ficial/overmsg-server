@@ -156,7 +156,6 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	fmt.Println()
 	var req map[string]interface{}
 	if err := json.Unmarshal(body, &req); err != nil {
 		w.WriteHeader(400)
@@ -299,7 +298,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "User is offline", nil}.ToJSON())
 		return
 	}
-	c.Write(Message{from.Name, req.Message}.ToJSON())
+	c.Write(Message{from.Name, req.Message, ""}.ToJSON())
 }
 
 func goOfflineHandler(w http.ResponseWriter, r *http.Request) {
