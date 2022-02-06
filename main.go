@@ -168,7 +168,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	if elem, ok = req["name"]; !ok {
 		w.WriteHeader(400)
-		w.Write(Answer{false, `"name" field is empty`, nil}.ToJSON())
+		w.Write(Answer{false, `Got no "name" field`, nil}.ToJSON())
 		return
 	}
 	var name string
@@ -176,9 +176,18 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		w.Write(Answer{false, `"name" field is not string type`, nil}.ToJSON())
 		return
+	} else if name = strings.TrimSpace(name); len([]rune(name)) <= 3 {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Too short name", nil}.ToJSON())
+		return
 	} else if len([]rune(name)) > 32 {
 		w.WriteHeader(413)
 		w.Write(Answer{false, "Too long name", nil}.ToJSON())
+		return
+	} else if []rune(name)[0] == '_' {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Name shouldn't start with _", nil}.ToJSON())
+		return
 	}
 	if rCount, err := loginData.CountDocuments(ctx,
 		bson.M{"name": name}); err != nil {
