@@ -220,7 +220,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(ans.ToJSON())
 }
 
-// SendMessageHandler handles
+// SendMessageHandler handles message sending
 func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "POST" {
@@ -307,12 +307,12 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "User is offline", nil}.ToJSON())
 		return
 	}
-	c.Write(Message{from.Name, req.Message, ""}.ToJSON())
+	c.Write(Message{from.Name, req.Message, "", ""}.ToJSON())
 	w.WriteHeader(200)
 	w.Write(Answer{true, "", nil}.ToJSON())
 }
 
-// GoOfflineHandler _
+// GoOfflineHandler handles going offline
 func GoOfflineHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "POST" {
@@ -341,6 +341,48 @@ func GoOfflineHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(Answer{true, "", nil}.ToJSON())
 }
 
+// IsOnlineHandler returns is user by nick online
+func IsOnlineHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		w.Write(Answer{false, "Unsupported method", nil}.ToJSON())
+		return
+	}
+	dat, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	}
+	defer r.Body.Close()
+	var req map[string]interface{}
+	if err := json.Unmarshal(dat, &req); err != nil {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Invalid JSON data", nil}.ToJSON())
+		return
+	}
+	var (
+		elem interface{}
+		ok   bool
+	)
+	if elem, ok = req["name"]; !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, `Got no "name" field`, nil}.ToJSON())
+		return
+	}
+	var name string
+	if name, ok = elem.(string); !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, `"name" field is not string type`, nil}.ToJSON())
+		return
+	}
+	_, cOk := conns[name]
+	w.WriteHeader(200)
+	w.Write(Answer{true, "", IsOnlineResult{cOk}}.ToJSON())
+}
+
 func main() {
 	if initFailed {
 		return
@@ -350,6 +392,7 @@ func main() {
 	router.HandleFunc("/auth", AuthHandler)
 	router.HandleFunc("/go_offline", GoOfflineHandler)
 	router.HandleFunc("/send_message", SendMessageHandler)
+	router.HandleFunc("/is_online", IsOnlineHandler)
 	router.HandleFunc("/", root)
 	infl.Println("[START] ========================")
 	var mainDeathChan = make(chan struct{})

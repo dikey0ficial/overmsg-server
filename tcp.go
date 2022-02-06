@@ -38,28 +38,6 @@ func tcpProcess(conn net.Conn) {
 		return
 	}
 	conns[token] = conn
-	clch := make(chan struct{})
-	go func(conn net.Conn, closed chan struct{}) {
-		defer func() { closed <- struct{}{} }()
-		in := bufio.NewScanner(conn)
-		out := bufio.NewWriter(conn)
-		for in.Scan() {
-			// Won't check err because won't do anything with err
-			if in.Err() != nil {
-				errl.Println(in.Err())
-				break
-			}
-			switch in.Text() {
-			case "ping":
-				out.WriteString("pong")
-			case "disconnect":
-				conn.Close()
-				return
-			default:
-				out.WriteString("don't understand")
-			}
-		}
-	}(conn, clch)
 	fmt.Fprint(conn, "success")
 WAITER:
 	for {

@@ -1,7 +1,6 @@
 package main
 
-// User is for users in
-// db
+// User is for users in db
 type User struct {
 	Token string `bson:"_id"`
 	Name  string `bson:"name"`
@@ -39,20 +38,30 @@ type AuthResult struct {
 // Result method for Result interface
 func (AuthResult) Result() {}
 
+// IsOnlineResult is result for IsOnline
+type IsOnlineResult struct {
+	Is bool `json:"is"`
+}
+
+// Result method for Result interface
+func (IsOnlineResult) Result() {}
+
 // Message is message.
 type Message struct {
 	From    string `json:"from_name"`
 	Message string `json:"message"`
 	Error   string `json:"error,omitempty"`
+	Type    string `json:"type"`
 }
 
 // ToJSON returns encoded message
 // as bytes
 func (m Message) ToJSON() []byte {
+	m.Type = "message"
 	res, err := json.Marshal(m)
 	if err != nil {
 		infl.Println("[ERROR] message2json: ", err)
-		return []byte(`{"error":"Error of encoding"}`)
+		return []byte(`{"type":"message","error":"Error of encoding"}`)
 	}
 	return res
 }
