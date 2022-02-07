@@ -131,6 +131,11 @@ func root(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+const allowedSymbols = "QWERTYUIOPASDFGHJKLZXCVBNM" +
+	"qwertyuiopasdfghjklzxcvbnm" +
+	"0123456789" +
+	"_-"
+
 // AuthHandler handles auth
 func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -189,6 +194,22 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "Name shouldn't start with _", nil}.ToJSON())
 		return
 	}
+	var isValid bool = true
+BIG:
+	for _, sym := range []rune(name) {
+		for _, vs := range []rune(allowedSymbols) {
+			if sym == vs {
+				continue BIG
+			}
+		}
+		isValid = false
+		break
+	}
+	if !isValid {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Name contains not-allowed symbols. GET /allowed_syms to more ingo", nil}.ToJSON())
+		return
+	}
 	if rCount, err := loginData.CountDocuments(ctx,
 		bson.M{"name": name}); err != nil {
 		w.WriteHeader(500)
@@ -218,6 +239,12 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(201)
 	w.Write(ans.ToJSON())
+}
+
+// AllowSymsHandler handles allowed symbols list
+func AllowSymsHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	w.Write([]byte(allowedSymbols))
 }
 
 // SendMessageHandler handles message sending
@@ -393,6 +420,7 @@ func main() {
 	router.HandleFunc("/go_offline", GoOfflineHandler)
 	router.HandleFunc("/send_message", SendMessageHandler)
 	router.HandleFunc("/is_online", IsOnlineHandler)
+	router.HandleFunc("/allowed_syms", AllowSymsHandler)
 	router.HandleFunc("/", root)
 	infl.Println("[START] ========================")
 	var mainDeathChan = make(chan struct{})
