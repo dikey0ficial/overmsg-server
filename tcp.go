@@ -44,8 +44,6 @@ WAITER:
 		select {
 		case <-tcpDeathChan:
 			break WAITER
-		case <-clch:
-			break WAITER
 		}
 	}
 	delete(conns, token)
