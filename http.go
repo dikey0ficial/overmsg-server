@@ -36,9 +36,14 @@ func root(w http.ResponseWriter, r *http.Request) {
 		"<h2 align=\"center\">Some info:</h2>"+
 		"<p> - <b>User-Agent:</b> "+r.Header.Get("User-Agent")+"</p>"+
 		"<p> - <b>Method:</b> "+r.Method+"</p>"+
-		"<p> - <b>Time of response (unix):</b> <span id=\"time\">"+strconv.Itoa(int(time.Now().Unix()))+"</span></p>"+
+		func() string {
+			if _, ok := r.URL.Query()["no-time"]; ok {
+				return ""
+			}
+			return "<p> - <b>Time of response (unix):</b> <span id=\"time\">" + strconv.Itoa(int(time.Now().Unix())) + "</span></p>"
+		}(),
 		"<p align=center>This server is for API of simple (and unsafe) messenger, written on Go — OVERMSG</p>"+
-		"</body></html>",
+			"</body></html>",
 	)
 }
 
