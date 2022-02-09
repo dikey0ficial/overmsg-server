@@ -52,8 +52,8 @@ const allowedSymbols = "QWERTYUIOPASDFGHJKLZXCVBNM" +
 	"0123456789" +
 	"_-"
 
-// AuthHandler handles auth
-func AuthHandler(w http.ResponseWriter, r *http.Request) {
+// RegHandler handles registration
+func RegHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "POST" {
 		w.WriteHeader(405)
@@ -83,17 +83,12 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "Invalid JSON data", nil}.ToJSON())
 		return
 	}
-	var (
-		elem interface{}
-		ok   bool
-	)
-	if elem, ok = req["name"]; !ok {
+	var name, pass string
+	if elem, ok := req["name"]; !ok {
 		w.WriteHeader(400)
 		w.Write(Answer{false, `Got no "name" field`, nil}.ToJSON())
 		return
-	}
-	var name string
-	if name, ok = elem.(string); !ok {
+	} else if name, ok = elem.(string); !ok {
 		w.WriteHeader(400)
 		w.Write(Answer{false, `"name" field is not string type`, nil}.ToJSON())
 		return
@@ -126,6 +121,23 @@ BIG:
 		w.Write(Answer{false, "Name contains not-allowed symbols. GET /allowed_syms to more ingo", nil}.ToJSON())
 		return
 	}
+	if elem, ok := req["pass"]; !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, `Got no "pass" field`, nil}.ToJSON())
+		return
+	} else if pass, ok = elem.(string); !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, `"pass" field is not string type`, nil}.ToJSON())
+		return
+	} else if len([]rune(pass)) == 0 {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "pass should be longer", nil}.ToJSON())
+		return
+	} else if len([]rune(pass)) >= 32 {
+		w.WriteHeader(413)
+		w.Write(Answer{false, "pass is TOO long", nil}.ToJSON())
+		return
+	}
 	if rCount, err := loginData.CountDocuments(ctx,
 		bson.M{"name": name}); err != nil {
 		w.WriteHeader(500)
@@ -139,8 +151,9 @@ BIG:
 	}
 	token := uuid.New().String()
 	var newUser = User{
-		Token: token,
 		Name:  name,
+		Pass:  pass,
+		Token: token,
 	}
 	_, err = loginData.InsertOne(ctx, newUser)
 	if err != nil {
@@ -151,7 +164,7 @@ BIG:
 	}
 	var ans = Answer{
 		Success: true,
-		Res:     AuthResult{token},
+		Res:     TokenResult{token},
 	}
 	w.WriteHeader(201)
 	w.Write(ans.ToJSON())
@@ -161,6 +174,83 @@ BIG:
 func AllowSymsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte(allowedSymbols))
+}
+
+// GetTokenHandler handles getting token by nick and password
+func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		w.Write(Answer{false, "Unsupported method", nil}.ToJSON())
+		return
+	} else if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(415)
+		w.Write(Answer{false, "Unsupported Content-Type", nil}.ToJSON())
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	}
+	defer r.Body.Close()
+	if len([]rune(strings.TrimSpace(string(body)))) == 0 {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Got no data", nil}.ToJSON())
+		return
+
+	}
+	var req map[string]interface{}
+	if err := json.Unmarshal(body, &req); err != nil {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Invalid JSON data", nil}.ToJSON())
+		return
+	}
+	var name, pass string
+	if nel, ok := req["name"]; !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Got no name", nil}.ToJSON())
+		return
+	} else if name, ok = nel.(string); !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Got not-string name", nil}.ToJSON())
+		return
+	}
+	if pel, ok := req["pass"]; !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Got no pass", nil}.ToJSON())
+		return
+	} else if pass, ok = pel.(string); !ok {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Got not-string pass", nil}.ToJSON())
+		return
+	}
+	if c, err := loginData.CountDocuments(ctx, bson.M{"name": name}); err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	} else if c == 0 {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Found no user with this nickname", nil}.ToJSON())
+		return
+	}
+	var us User
+	if err := loginData.FindOne(ctx, bson.M{"name": name}).Decode(&us); err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	}
+	if us.Pass != pass {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "Wrong password", nil}.ToJSON())
+		return
+	}
+	w.WriteHeader(200)
+	w.Write(Answer{true, "", TokenResult{us.Token}}.ToJSON())
 }
 
 // SendMessageHandler handles message sending

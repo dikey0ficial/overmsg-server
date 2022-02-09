@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	infl, errl *log.Logger
-	conf       = struct {
+	infl, errl, debl *log.Logger
+	conf             = struct {
 		Mongo struct {
 			URL string `toml:"url" env:"MONGOURL,notEmpty"`
 		} `toml:"mongo"`
@@ -44,6 +44,7 @@ func init() {
 	fmt.Print("Open loggers: ... ")
 	infl = log.New(os.Stdout, "[INFO]\t", log.Ldate|log.Ltime|log.Lshortfile)
 	errl = log.New(os.Stderr, "[ERROR]\t", log.Ldate|log.Ltime|log.LstdFlags|log.Lshortfile)
+	debl = log.New(os.Stderr, "[DEBUG]\t", log.Ldate|log.Ltime|log.LstdFlags|log.Lshortfile)
 	fmt.Println("\rOpen loggers: success")
 	fmt.Print("Read conf: ...")
 	if tomlData, err := ioutil.ReadFile("config.toml"); err == nil {
@@ -102,7 +103,8 @@ func main() {
 	}
 	defer infl.Println("[END]   ========================")
 	router := mux.NewRouter()
-	router.HandleFunc("/auth", AuthHandler)
+	router.HandleFunc("/reg", RegHandler)
+	router.HandleFunc("/get_token", GetTokenHandler)
 	router.HandleFunc("/go_offline", GoOfflineHandler)
 	router.HandleFunc("/send_message", SendMessageHandler)
 	router.HandleFunc("/is_online", IsOnlineHandler)

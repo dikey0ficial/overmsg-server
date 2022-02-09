@@ -2,15 +2,16 @@ package main
 
 // User is for users in db
 type User struct {
-	Token string `bson:"_id"`
 	Name  string `bson:"name"`
+	Pass  string `bson:"pass"`
+	Token string `bson:"_id"`
 }
 
 // Answer is type for JSON answer
 type Answer struct {
 	Success bool   `json:"succes"`
-	Error   string `json:"error"`
-	Res     Result `json:"result"`
+	Error   string `json:"error,omitempty"`
+	Res     Result `json:"result,omitempty"`
 }
 
 // Result needs to use
@@ -24,19 +25,19 @@ type Result interface {
 func (a Answer) ToJSON() []byte {
 	res, err := json.Marshal(a)
 	if err != nil {
-		infl.Println("[ERROR] answer2json: ", err)
+		errl.Println("answer2json: ", err)
 		return []byte(`{"succes":false,"error":"server error"}`)
 	}
 	return res
 }
 
-// AuthResult is result for Auth
-type AuthResult struct {
+// TokenResult is result for reg and get_token
+type TokenResult struct {
 	Token string `json:"token"`
 }
 
 // Result method for Result interface
-func (AuthResult) Result() {}
+func (TokenResult) Result() {}
 
 // IsOnlineResult is result for IsOnline
 type IsOnlineResult struct {
