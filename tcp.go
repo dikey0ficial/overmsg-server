@@ -33,7 +33,8 @@ func tcpProcess(conn net.Conn) {
 		fmt.Fprint(conn, "token not found")
 		return
 	}
-	if _, ok := conns[token]; ok {
+	if c, ok := conns[token]; ok {
+		debl.Println(c)
 		fmt.Fprint(conn, "you already have connection; destroy it using go_offline method")
 		return
 	}
@@ -41,6 +42,9 @@ func tcpProcess(conn net.Conn) {
 	fmt.Fprint(conn, "success")
 WAITER:
 	for {
+		if _, err := conn.Read([]byte{}); err != nil {
+			break WAITER
+		}
 		select {
 		case <-tcpDeathChan:
 			break WAITER
