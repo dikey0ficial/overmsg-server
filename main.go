@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,7 +35,7 @@ var (
 	loginData   *mongo.Collection
 	json             = jsoniter.ConfigCompatibleWithStandardLibrary
 	ctx              = context.Background()
-	conns            = make(map[string]net.Conn)
+	conns            = make(map[string]cConn)
 	initFailed  bool = true
 )
 
@@ -108,6 +107,7 @@ func main() {
 	router.HandleFunc("/go_offline", GoOfflineHandler)
 	router.HandleFunc("/send_message", SendMessageHandler)
 	router.HandleFunc("/is_online", IsOnlineHandler)
+	router.HandleFunc("/heartbeat", HeartbeatHandler)
 	router.HandleFunc("/allowed_syms", AllowSymsHandler)
 	router.HandleFunc("/", root)
 	infl.Println("[START] ========================")

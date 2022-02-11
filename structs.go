@@ -1,5 +1,15 @@
 package main
 
+import (
+	"net"
+	"time"
+)
+
+type cConn struct {
+	Conn net.Conn
+	last time.Time
+}
+
 // User is for users in db
 type User struct {
 	Name  string `bson:"name"`
@@ -41,7 +51,8 @@ func (TokenResult) Result() {}
 
 // IsOnlineResult is result for IsOnline
 type IsOnlineResult struct {
-	Is bool `json:"is"`
+	Is     bool `json:"is"`
+	Exists bool `json:"exists"`
 }
 
 // Result method for Result interface
@@ -62,9 +73,9 @@ func (m Message) ToJSON() []byte {
 	res, err := json.Marshal(m)
 	if err != nil {
 		infl.Println("[ERROR] message2json: ", err)
-		return []byte(`{"type":"message","error":"Error of encoding"}`)
+		return []byte(`{"type":"message","error":"Error of encoding"}` + "\n")
 	}
-	return res
+	return append(res, '\n')
 }
 
 // SendMessageRequest is for

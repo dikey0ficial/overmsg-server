@@ -340,7 +340,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "User is offline", nil}.ToJSON())
 		return
 	}
-	c.Write(Message{from.Name, req.Message, "", ""}.ToJSON())
+	c.Conn.Write(Message{from.Name, req.Message, "", ""}.ToJSON())
 	w.WriteHeader(200)
 	w.Write(Answer{true, "", nil}.ToJSON())
 }
@@ -360,7 +360,7 @@ func GoOfflineHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var (
-		conn net.Conn
+		conn cConn
 		ok   bool
 	)
 	if conn, ok = conns[token]; !ok {
@@ -368,7 +368,7 @@ func GoOfflineHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "Connection with this token not found", nil}.ToJSON())
 		return
 	}
-	conn.Close()
+	conn.Conn.Close()
 	delete(conns, token)
 	w.WriteHeader(200)
 	w.Write(Answer{true, "", nil}.ToJSON())
@@ -411,7 +411,54 @@ func IsOnlineHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, `"name" field is not string type`, nil}.ToJSON())
 		return
 	}
-	_, cOk := conns[name]
+	var (
+		us User
+		c  int64
+	)
+	if c, err = loginData.CountDocuments(ctx, bson.M{"name": name}); err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	} else if c != 0 {
+		if err := loginData.FindOne(ctx, bson.M{"name": name}).Decode(&us); err != nil {
+			w.WriteHeader(500)
+			errl.Println(err)
+			w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+			return
+		}
+	}
+	_, cOk := conns[us.Token]
 	w.WriteHeader(200)
-	w.Write(Answer{true, "", IsOnlineResult{cOk}}.ToJSON())
+	w.Write(Answer{true, "", IsOnlineResult{cOk, c != 0}}.ToJSON())
+}
+
+// HeartbeatHandler implements hearbeat
+func HeartbeatHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		fmt.Fprint(w, "Unsupported method")
+		return
+	}
+	dat, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(500)
+		errl.Println(err)
+		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
+		return
+	}
+	defer r.Body.Close()
+	tok := strings.TrimSpace(string(dat))
+	var c net.Conn
+	if cc, ok := conns[tok]; !ok {
+		w.WriteHeader(400)
+		fmt.Fprint(w, "Found no users online with this token")
+		return
+	} else if true { // sorry, but i hate arguing linter
+		c = cc.Conn
+	}
+	conns[tok] = cConn{
+		Conn: c,
+		last: time.Now(),
+	}
 }
