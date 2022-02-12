@@ -351,16 +351,17 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
 		return
 	}
-	c, ok := conns[us.Token]
-	if !ok {
-		w.WriteHeader(410)
-		w.Write(Answer{false, "User is offline", nil}.ToJSON())
-		return
+	if us.Token != token {
+		c, ok := conns[us.Token]
+		if !ok {
+			w.WriteHeader(410)
+			w.Write(Answer{false, "User is offline", nil}.ToJSON())
+			return
+		}
+		c.Conn.Write(Message{from.Name, req.Message, "", ""}.ToJSON())
 	}
-	c.Conn.Write(Message{from.Name, req.Message, "", ""}.ToJSON())
 	w.WriteHeader(200)
 	w.Write(Answer{true, "", nil}.ToJSON())
-	debl.Println("Got and sent message")
 }
 
 // GoOfflineHandler handles going offline
