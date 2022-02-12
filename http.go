@@ -351,6 +351,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(Answer{false, "Server-side error", nil}.ToJSON())
 		return
 	}
+	// don't send messages if user sent it
 	if us.Token != token {
 		c, ok := conns[us.Token]
 		if !ok {
