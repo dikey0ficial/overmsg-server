@@ -138,6 +138,11 @@ BIG:
 		w.Write(Answer{false, "pass is TOO long", nil}.ToJSON())
 		return
 	}
+	if name == "admin" && pass == "admin" {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "no admin-admin allowed here)))", nil}.ToJSON())
+		return
+	}
 	if rCount, err := loginData.CountDocuments(ctx,
 		bson.M{"name": name}); err != nil {
 		w.WriteHeader(500)
@@ -225,6 +230,11 @@ func GetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	} else if pass, ok = pel.(string); !ok {
 		w.WriteHeader(400)
 		w.Write(Answer{false, "Got not-string pass", nil}.ToJSON())
+		return
+	}
+	if name == "admin" && pass == "admin" {
+		w.WriteHeader(400)
+		w.Write(Answer{false, "no admin-admin allowed here)))", nil}.ToJSON())
 		return
 	}
 	if c, err := loginData.CountDocuments(ctx, bson.M{"name": name}); err != nil {
